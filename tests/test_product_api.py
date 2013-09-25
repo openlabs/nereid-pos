@@ -163,7 +163,7 @@ class TestProduct(NereidTestCase):
                     '/en_US/pos/products',
                     headers=self.get_auth_header('wrong')
                 )
-                self.assertEqual(rv.status_code, 200)
+                self.assertEqual(rv.status_code, 401)
 
                 # Render all products
                 rv = c.get(
