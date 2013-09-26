@@ -8,10 +8,23 @@
 from trytond.pool import Pool
 
 from .product import Product, Category
+from .sale import POSSale, Website, Sale, Party, PaymentLine, PaymentMode
+from .payment import PaymentModeStripe
+from .configuration import Configuration
 
 
 def register():
     Pool.register(
         Product,
         Category,
-        module='nereid_pos', type_='model')
+        Configuration,
+        POSSale,
+        PaymentMode,
+        PaymentLine,
+        PaymentModeStripe,
+        Sale,
+        Party,
+        Website,
+        module='nereid_pos',
+        type_='model'
+    )

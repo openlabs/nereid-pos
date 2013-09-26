@@ -1,0 +1,125 @@
+<?xml version="1.0"?>
+<!-- This file is part of Tryton.  The COPYRIGHT file at the top level of
+this repository contains the full copyright notices and license terms. -->
+<tryton>
+  <data>
+        <menuitem parent="sale.menu_configuration" id="menu_pos_configuration"
+        sequence="20" name="POS Configuration" action="act_pos_configuration_form"/> 
+        <record model="ir.ui.view" id="pos_payment_mode_view_form">
+            <field name="model">pos.sale.payment_mode</field>
+            <field name="type">form</field>
+            <field name="arch" type="xml">
+                <![CDATA[
+                <form string="Payment Mode">
+                    <label name="name" />
+                    <field name="name" />
+                    <label name="journal" />
+                    <field name="journal" />
+                    <label name="processor" />
+                    <field name="processor" />
+                    <label name="stripe_api_key" />
+                    <field name="stripe_api_key" />
+                </form>
+                ]]>
+            </field>
+        </record>
+
+        <record model="ir.ui.view" id="pos_payment_mode_view_tree">
+            <field name="model">pos.sale.payment_mode</field>
+            <field name="type">tree</field>
+            <field name="arch" type="xml">
+                <![CDATA[
+                <tree string="Payment Mode">
+                    <field name="name" />
+                    <field name="journal" />
+                    <field name="processor" />
+                </tree>
+                ]]>
+          </field>
+        </record>
+
+        <record model="ir.action.act_window" id="act_pos_payment_mode_form">
+            <field name="name">Payment Mode</field>
+            <field name="res_model">pos.sale.payment_mode</field>
+        </record>
+
+        <record model="ir.action.act_window.view"
+            id="act_pos_payment_mode_form_view1">
+            <field name="sequence" eval="10"/>
+            <field name="view" ref="pos_payment_mode_view_tree"/>
+            <field name="act_window" ref="act_pos_payment_mode_form"/>
+        </record>
+
+        <record model="ir.action.act_window.view" 
+            id="act_pos_payment_mode_form_view2">
+            <field name="sequence" eval="20" />
+            <field name="view" ref="pos_payment_mode_view_form" />
+            <field name="act_window" ref="act_pos_payment_mode_form" />
+       </record>
+
+       <menuitem parent="sale.menu_configuration" sequence="20"
+                 id="menu_payment_mode" action="act_pos_payment_mode_form" />
+
+       
+    
+             <record model="ir.ui.view" id="pos_payment_line_view_tree">
+            <field name="model">pos.sale.payment_line</field>
+            <field name="type">tree</field>
+            <field name="arch" type="xml">
+                <![CDATA[
+                <tree string="Payment Lines">
+                    <field name="pos_sale"/>
+                    <field name="processor"/>
+                    <field name="amount" />
+                    <field name="reference" />
+                    <field name="notes" />
+                    <field name="state" />  
+                </tree>
+                ]]>
+            </field>
+        </record>
+
+        <record model="ir.ui.view" id="pos_payment_line_view_form">
+            <field name="model">pos.sale.payment_line</field>
+            <field name="type">form</field>
+            <field name="arch" type="xml">
+                <![CDATA[
+                <form string="Payment Lines">
+                    <label name="amount" />
+                    <field name="amount" />
+                    <label name="processor" />
+                    <field name="processor" />
+                    <label name="reference" />
+                    <field name="reference" />
+                    <separator name="notes" colspan="4"/>
+                    <field name="notes" colspan="4"/>
+                </form>
+                ]]>
+            </field>
+          </record>
+
+        <record model="ir.action.act_window" id="act_pos_payment_line_form">
+            <field name="name">Payment Lines</field>
+            <field name="res_model">pos.sale.payment_line</field>
+        </record>
+
+        <record model="ir.action.act_window.view"
+            id="act_pos_payment_line_form_view1">
+            <field name="sequence" eval="10"/>
+            <field name="view" ref="pos_payment_line_view_tree"/>
+            <field name="act_window" ref="act_pos_payment_line_form"/>
+        </record>
+
+        <record model="ir.action.act_window.view" 
+            id="act_pos_payment_line_form_view2">
+            <field name="sequence" eval="20" />
+            <field name="view" ref="pos_payment_line_view_form" />
+            <field name="act_window" ref="act_pos_payment_line_form" />
+        </record>
+
+        <menuitem parent="sale.menu_configuration" sequence="20"
+            id="menu_payment_line" action="act_pos_payment_line_form" />
+
+    </data>
+</tryton>
+
