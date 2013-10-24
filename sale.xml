@@ -118,7 +118,15 @@ this repository contains the full copyright notices and license terms. -->
         </record>
 
         <menuitem parent="sale.menu_configuration" sequence="20"
-            id="menu_payment_line" action="act_pos_payment_line_form" />
+           id="menu_payment_line" action="act_pos_payment_line_form" />
+
+        <record model="ir.action.report" id="rep_sale_receipt">
+            <field name="name">Sale Receipt</field>
+            <field name="model">pos.sale</field>
+            <field name="report_name">pos.sale.receipt</field>
+            <field name="report">nereid_pos/sale_receipt.odt</field>
+            <field name="template_extension">odt</field>
+        </record>
 
     </data>
 </tryton>

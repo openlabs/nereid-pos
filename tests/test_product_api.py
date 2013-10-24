@@ -270,6 +270,7 @@ class TestProduct(NereidTestCase):
 
     def _create_new_sale(self):
         PaymentTerm = POOL.get('account.invoice.payment_term')
+        PosSale = POOL.get('pos.sale')
 
         uom, = self.Uom.search([], limit=1)
         app = self.get_app()
@@ -302,7 +303,7 @@ class TestProduct(NereidTestCase):
             self.assertEqual(rv.status_code, 200)
 
             response = json.loads(rv.data)
-            return response['data']['id']
+            return PosSale(response['data']['id'])
 
     def _get_template_source(self, name):
         """
@@ -472,10 +473,10 @@ class TestProduct(NereidTestCase):
             }
 
             template1, = self.Template.create([values1])
-            pos_sale_id = self._create_new_sale()
+            pos_sale = self._create_new_sale()
 
             with app.test_client() as c:
-                url = '/en_US/pos/sales/{0}/add_line'.format(pos_sale_id)
+                url = '/en_US/pos/sales/{0}/add_line'.format(pos_sale.id)
                 rv = c.post(
                     url,
                     data={
@@ -518,10 +519,10 @@ class TestProduct(NereidTestCase):
                 ]
             }
             template1, = self.Template.create([values1])
-            pos_sale_id = self._create_new_sale()
+            pos_sale = self._create_new_sale()
 
             with app.test_client() as c:
-                url = '/en_US/pos/sales/{0}/add_line'.format(pos_sale_id)
+                url = '/en_US/pos/sales/{0}/add_line'.format(pos_sale.id)
                 rv = c.post(
                     url,
                     data={
@@ -537,7 +538,7 @@ class TestProduct(NereidTestCase):
                 )
                 sale_line_id = response['line_id']
                 url = '/en_US/pos/sales/{0}/delete_line/{1}'.format(
-                    pos_sale_id, sale_line_id)
+                    pos_sale.id, sale_line_id)
                 rv = c.delete(
                     url,
                     headers=self._get_auth_header()
@@ -553,7 +554,6 @@ class TestProduct(NereidTestCase):
         Adds a party to sale using exisitng id
         """
         with Transaction().start(DB_NAME, USER, context=CONTEXT):
-            PosSale = POOL.get('pos.sale')
             Party = POOL.get('party.party')
 
             self.setup_defaults()
@@ -563,9 +563,9 @@ class TestProduct(NereidTestCase):
                 'name': 'goodparty'
             }])
 
-            pos_sale_id = self._create_new_sale()
+            pos_sale = self._create_new_sale()
             with app.test_client() as c:
-                url = '/en_US/pos/sales/{0}/add_party'.format(pos_sale_id)
+                url = '/en_US/pos/sales/{0}/add_party'.format(pos_sale.id)
                 c.post(
                     url,
                     data={
@@ -573,7 +573,6 @@ class TestProduct(NereidTestCase):
                     },
                     headers=self._get_auth_header()
                 )
-                pos_sale, = PosSale.search([('id', '=', pos_sale_id)])
                 self.assertEqual(pos_sale.sale.party, new_party)
 
     def test_0070_add_party_to_sale_with_party_name(self):
@@ -581,13 +580,12 @@ class TestProduct(NereidTestCase):
         Adds a party to sale by supplying name, phone and email
         """
         with Transaction().start(DB_NAME, USER, context=CONTEXT):
-            PosSale = POOL.get('pos.sale')
             self.setup_defaults()
             app = self.get_app()
 
-            pos_sale_id = self._create_new_sale()
+            pos_sale = self._create_new_sale()
             with app.test_client() as c:
-                url = '/en_US/pos/sales/{0}/add_party'.format(pos_sale_id)
+                url = '/en_US/pos/sales/{0}/add_party'.format(pos_sale.id)
                 c.post(
                     url,
                     data={
@@ -598,7 +596,6 @@ class TestProduct(NereidTestCase):
                     headers=self._get_auth_header()
                 )
 
-                pos_sale, = PosSale.search([('id', '=', pos_sale_id)])
                 self.assertEqual(pos_sale.sale.party.name, 'abc')
 
                 for contact in pos_sale.sale.party.contact_mechanisms:
@@ -614,8 +611,6 @@ class TestProduct(NereidTestCase):
         """
         Deletes a party from an existing sale
         """
-        PosSale = POOL.get('pos.sale')
-
         with Transaction().start(DB_NAME, USER, context=CONTEXT):
             self.setup_defaults()
             app = self.get_app()
@@ -624,10 +619,10 @@ class TestProduct(NereidTestCase):
                 'name': 'newparty',
             }])
 
-            pos_sale_id = self._create_new_sale()
+            pos_sale = self._create_new_sale()
 
             with app.test_client() as c:
-                url = '/en_US/pos/sales/{0}/add_party'.format(pos_sale_id)
+                url = '/en_US/pos/sales/{0}/add_party'.format(pos_sale.id)
                 c.post(
                     url,
                     data={
@@ -635,7 +630,6 @@ class TestProduct(NereidTestCase):
                     },
                     headers=self._get_auth_header()
                 )
-                pos_sale, = PosSale.search([{'id', '=', pos_sale_id}])
                 self.assertEqual(pos_sale.sale.party, new_party)
 
                 url = '/en_US/pos/sales/{0}/delete_party'.format(pos_sale.id)
@@ -668,13 +662,13 @@ class TestProduct(NereidTestCase):
                 'journal': cash_journal.id,
             }])
 
-            pos_sale_id = self._create_new_sale()
+            pos_sale = self._create_new_sale()
             with app.test_client() as c:
-                url = '/en_US/pos/sales/{0}/make_payment'.format(pos_sale_id)
+                url = '/en_US/pos/sales/{0}/make_payment'.format(pos_sale.id)
                 rv = c.post(
                     url,
                     data={
-                        'mode': payment_mode.id,
+                        'mode': 'Cash',
                         'amount': '10'
                     },
                     headers=self._get_auth_header()
@@ -719,13 +713,13 @@ class TestProduct(NereidTestCase):
                 }
             )
             stripe_token = stripe_response['id']
-            pos_sale_id = self._create_new_sale()
+            pos_sale = self._create_new_sale()
             with app.test_client() as c:
-                url = '/en_US/pos/sales/{0}/make_payment'.format(pos_sale_id)
+                url = '/en_US/pos/sales/{0}/make_payment'.format(pos_sale.id)
                 rv = c.post(
                     url,
                     data={
-                        'mode': payment_mode.id,
+                        'mode': 'Stripe',
                         'amount': '1000',
                         'stripe_token': stripe_token
                     },
@@ -771,13 +765,13 @@ class TestProduct(NereidTestCase):
                 }
             )
             stripe_token = stripe_response['id']
-            pos_sale_id = self._create_new_sale()
+            pos_sale = self._create_new_sale()
             with app.test_client() as c:
-                url = '/en_US/pos/sales/{0}/make_payment'.format(pos_sale_id)
+                url = '/en_US/pos/sales/{0}/make_payment'.format(pos_sale.id)
                 rv = c.post(
                     url,
                     data={
-                        'mode': payment_mode.id,
+                        'mode': 'Stripe',
                         'amount': '1000',
                         'stripe_token': stripe_token
                     },
@@ -787,6 +781,20 @@ class TestProduct(NereidTestCase):
                 self.assertEqual(
                     response['data'][0]['state'], 'failed'
                 )
+
+    def test_0120_receipt_test(self):
+       """
+       Tests to check if the receipt is made
+       """
+       with Transaction().start(DB_NAME, USER, context=CONTEXT):
+           self.setup_defaults()
+           app = self.get_app()
+
+           pos_sale = self._create_new_sale()
+	   with app.test_client() as c:
+               url = '/en_US/pos/sales/{0}/make_receipt'.format(pos_sale.id)
+               c.get(url, headers=self._get_auth_header())
+               self.assertTrue(pos_sale.sale_receipt_cache)
 
 
 def suite():

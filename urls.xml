@@ -78,5 +78,13 @@
           <field name="http_method_post" eval="True"/>
           <field name="url_map" ref="pos_url_map"/>
         </record>
+
+        <record id="make_receipt" model="nereid.url_rule">
+          <field name="rule">/&lt;language&gt;/pos/sales/&lt;int:active_id&gt;/make_receipt</field>
+          <field name="endpoint">pos.sale.make_receipt</field>
+          <field name="sequence" eval="140"/>
+          <field name="http_method_get" eval="True"/>
+          <field name="url_map" ref="pos_url_map"/>
+        </record>
     </data>
 </tryton>

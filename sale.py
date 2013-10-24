@@ -33,6 +33,7 @@ class POSSale(ModelSQL):
     payment_lines = fields.One2Many(
         'pos.sale.payment_line', 'pos_sale', 'Payment Lines'
     )
+    sale_receipt_cache = fields.Binary('Sale Receipt', readonly=True)
 
     def _json(self):
         """
@@ -243,7 +244,7 @@ class POSSale(ModelSQL):
         if request.method == "POST":
             payment_mode = request.form.get('mode', str)
             amount = request.form.get('amount', str)
-            payment_mode, = PaymentMode.search([('id', '=', payment_mode)])
+            payment_mode, = PaymentMode.search([('name', '=', payment_mode)])
             payment_line, = PaymentLine.create([{
                 'pos_sale': self.id,
                 'processor': payment_mode.id,
@@ -256,6 +257,22 @@ class POSSale(ModelSQL):
                     line._json() for line in self.payment_lines
                 ]
             )
+
+    @basic_auth_required
+    def make_receipt(self):
+        """
+        Makes a receipt for the current sale
+        """
+        SaleReceipt = Pool().get('pos.sale.receipt', type='report')
+        PosSale = Pool().get('pos.sale')
+
+        if not self.sale_receipt_cache:
+            report = SaleReceipt.execute([], {'id': self.id})
+            PosSale.write([self], {'sale_receipt_cache': report[1]})
+        self = PosSale(self)
+        return jsonify({
+            'data': ''.join(list(self.sale_receipt_cache)).encode('base64')
+        })
 
 
 class Website:

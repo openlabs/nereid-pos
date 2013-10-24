@@ -56,9 +56,11 @@ class PaymentModeStripe:
         PaymentLine = Pool().get('pos.sale.payment_line')
         stripe.api_key = self.stripe_api_key
 
+        # Multiplying amount by 100, because the amount charged by
+        # sprite is in cents
         try:
             stripe.Charge.create(
-                amount=payment_line.amount,
+                amount=payment_line.amount * 100,
                 currency=payment_line.pos_sale.sale.currency.code,
                 card=token,
                 description='For Sale ID:{0}'.format(

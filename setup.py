@@ -53,7 +53,7 @@ setup(
     package_data={
         'trytond.modules.nereid_pos': info.get('xml', [])
             + info.get('translation', [])
-            + ['tryton.cfg', 'locale/*.po', 'tests/*.rst'],
+            + ['tryton.cfg', 'locale/*.po', 'tests/*.rst', '*.odt'],
     },
     classifiers=[
         'Development Status :: 4 - Beta',
