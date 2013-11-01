@@ -16,7 +16,12 @@ import trytond.tests.test_tryton
 from trytond.tests.test_tryton import POOL, USER, DB_NAME, CONTEXT
 from nereid.testing import NereidTestCase
 from trytond.transaction import Transaction
+from trytond.tools import get_smtp_server
+from trytond.config import CONFIG
+from mock import patch
 import stripe
+
+CONFIG['smtp_from'] = 'from@xyz.com'
 
 
 class TestProduct(NereidTestCase):
@@ -258,8 +263,15 @@ class TestProduct(NereidTestCase):
         self.AccountTemplate = POOL.get('account.account.template')
         self.PosConfiguration = POOL.get('pos.configuration')
         self.Sequence = POOL.get('ir.sequence')
-        self.templates = {
-        }
+        self.templates = {}
+
+        self.smtplib_patcher = patch('smtplib.SMTP', autospec=True)
+        self.PatchedSMTP = self.smtplib_patcher.start()
+        self.mocked_smtp_instance = self.PatchedSMTP.return_value
+
+    def tearDown(self):
+        # Unpatched SMTP Lib
+        self.smtplib_patcher.stop()
 
     def _get_auth_header(self, username='admin', password='admin'):
         return {
@@ -311,11 +323,15 @@ class TestProduct(NereidTestCase):
         """
         return self.templates.get(name)
 
+    def test_0005_mock_setup(self):
+        assert get_smtp_server() is self.PatchedSMTP.return_value
+
     def test_0010_product_pos_list(self):
         """
         Get list of products from the POS
         """
         with Transaction().start(DB_NAME, USER, context=CONTEXT):
+            print CONFIG
             self.setup_defaults()
             uom, = self.Uom.search([], limit=1)
             values1 = {
@@ -782,19 +798,39 @@ class TestProduct(NereidTestCase):
                     response['data'][0]['state'], 'failed'
                 )
 
-    def test_0120_receipt_test(self):
-       """
-       Tests to check if the receipt is made
-       """
-       with Transaction().start(DB_NAME, USER, context=CONTEXT):
-           self.setup_defaults()
-           app = self.get_app()
+    def test_0130_receipt_test(self):
+        """
+        Tests to check if the receipt is made
+        """
+        with Transaction().start(DB_NAME, USER, context=CONTEXT):
+            self.setup_defaults()
+            app = self.get_app()
 
-           pos_sale = self._create_new_sale()
-	   with app.test_client() as c:
-               url = '/en_US/pos/sales/{0}/make_receipt'.format(pos_sale.id)
-               c.get(url, headers=self._get_auth_header())
-               self.assertTrue(pos_sale.sale_receipt_cache)
+            pos_sale = self._create_new_sale()
+            with app.test_client() as c:
+                url = '/en_US/pos/sales/{0}/make_receipt'.format(pos_sale.id)
+                c.get(url, headers=self._get_auth_header())
+                self.assertTrue(pos_sale.sale_receipt_cache)
+
+    def test_0120_send_email_with_default_party(self):
+        """
+        Tests to chek if the default party is set, uses email id from
+        form data, to send email
+        """
+        with Transaction().start(DB_NAME, USER, context=CONTEXT):
+            self.setup_defaults()
+            app = self.get_app()
+
+            pos_sale = self._create_new_sale()
+            with app.test_client() as c:
+                url = '/en_US/pos/sales/{0}/send_email'.format(pos_sale.id)
+                c.post(
+                    url,
+                    data={
+                        'email_id': 'udit.wal@gmail.com'
+                    },
+                    headers=self._get_auth_header()
+                )
 
 
 def suite():

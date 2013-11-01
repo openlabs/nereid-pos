@@ -8,9 +8,12 @@
 from trytond.model import ModelSQL, ModelView, fields
 from trytond.pool import PoolMeta, Pool
 from .helpers import basic_auth_required
-from nereid import request, jsonify
+from nereid import request, jsonify, render_email
 from trytond.transaction import Transaction
 from decimal import Decimal
+from jinja2 import Template
+from trytond.tools import get_smtp_server
+from trytond.config import CONFIG
 
 __all__ = ['POSSale', 'Website', 'Sale', 'Party', 'PaymentMode', 'PaymentLine']
 __metaclass__ = PoolMeta
@@ -272,6 +275,46 @@ class POSSale(ModelSQL):
         self = PosSale(self)
         return jsonify({
             'data': ''.join(list(self.sale_receipt_cache)).encode('base64')
+        })
+
+    @basic_auth_required
+    def send_receipt_email(self):
+        """
+        Sends an email for the receipt
+
+        Form Data:
+            email_id: Email ID of Party
+        Response:
+            success: if send email succesful
+        """
+        if request.form.get('email_id'):
+            email_to = request.form.get('email_id')
+        else:
+            contact_mechanisms = self.sale.party.contact_mechanisms
+            for contact_mechanism in contact_mechanisms:
+                if contact_mechanism.type == "email":
+                    email_to = contact_mechanism.value
+
+        print email_to
+        message = render_email(
+            from_email=CONFIG['smtp_from'],
+            to=email_to,
+            subject='Receipt from {0}'.format(
+                Transaction().context.get('company')
+            ),
+            attachments={
+                'receipt.pdf': self.sale_receipt_cache
+            },
+            text_template=Template("hello")
+        )
+        server = get_smtp_server()
+        server.sendmail(
+            CONFIG['smtp_from'], email_to,
+            message.as_string()
+        )
+        server.quit()
+        return jsonify({
+            'success': 'True'
         })
 
 
