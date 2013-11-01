@@ -331,7 +331,6 @@ class TestProduct(NereidTestCase):
         Get list of products from the POS
         """
         with Transaction().start(DB_NAME, USER, context=CONTEXT):
-            print CONFIG
             self.setup_defaults()
             uom, = self.Uom.search([], limit=1)
             values1 = {
@@ -581,7 +580,7 @@ class TestProduct(NereidTestCase):
 
             pos_sale = self._create_new_sale()
             with app.test_client() as c:
-                url = '/en_US/pos/sales/{0}/add_party'.format(pos_sale.id)
+                url = '/en_US/pos/sales/{0}/set_party'.format(pos_sale.id)
                 c.post(
                     url,
                     data={
@@ -601,7 +600,7 @@ class TestProduct(NereidTestCase):
 
             pos_sale = self._create_new_sale()
             with app.test_client() as c:
-                url = '/en_US/pos/sales/{0}/add_party'.format(pos_sale.id)
+                url = '/en_US/pos/sales/{0}/set_party'.format(pos_sale.id)
                 c.post(
                     url,
                     data={
@@ -638,7 +637,7 @@ class TestProduct(NereidTestCase):
             pos_sale = self._create_new_sale()
 
             with app.test_client() as c:
-                url = '/en_US/pos/sales/{0}/add_party'.format(pos_sale.id)
+                url = '/en_US/pos/sales/{0}/set_party'.format(pos_sale.id)
                 c.post(
                     url,
                     data={
@@ -648,7 +647,7 @@ class TestProduct(NereidTestCase):
                 )
                 self.assertEqual(pos_sale.sale.party, new_party)
 
-                url = '/en_US/pos/sales/{0}/delete_party'.format(pos_sale.id)
+                url = '/en_US/pos/sales/{0}/set_party'.format(pos_sale.id)
                 c.delete(
                     url,
                     headers=self._get_auth_header()
@@ -823,6 +822,10 @@ class TestProduct(NereidTestCase):
 
             pos_sale = self._create_new_sale()
             with app.test_client() as c:
+                # Make receipt first
+                url = '/en_US/pos/sales/{0}/make_receipt'.format(pos_sale.id)
+                c.get(url, headers=self._get_auth_header())
+
                 url = '/en_US/pos/sales/{0}/send_email'.format(pos_sale.id)
                 c.post(
                     url,
@@ -831,6 +834,86 @@ class TestProduct(NereidTestCase):
                     },
                     headers=self._get_auth_header()
                 )
+
+    def test_0130_send_email_with_custom_party(self):
+        """
+        Tests to check that if no value is supplied with the post data,
+        the right email is picked up and sent to the right person
+        """
+        with Transaction().start(DB_NAME, USER, context=CONTEXT):
+            self.setup_defaults()
+            app = self.get_app()
+
+            pos_sale = self._create_new_sale()
+
+            # Create a party and add it to the current sale with email
+            with app.test_client() as c:
+                # Make receipt first
+                url = '/en_US/pos/sales/{0}/make_receipt'.format(pos_sale.id)
+                c.get(url, headers=self._get_auth_header())
+
+                url = '/en_US/pos/sales/{0}/set_party'.format(pos_sale.id)
+                c.post(
+                    url,
+                    data={
+                        'name': 'abc',
+                        'phone': '123',
+                        'email': 'abc@def.com'
+                    },
+                    headers=self._get_auth_header()
+                )
+                url = '/en_US/pos/sales/{0}/send_email'.format(pos_sale.id)
+                c.post(
+                    url,
+                    headers=self._get_auth_header()
+                )
+
+    def test_0140_delete_payment_line(self):
+        """
+        Test for checking if the delete a payment line thing is working,
+        one should realize this is only and only for cash lines, it doesn't
+        make sense to delete a payment line, once we have added a card
+        """
+        PaymentMode = POOL.get('pos.sale.payment_mode')
+        Journal = POOL.get('account.journal')
+
+        with Transaction().start(DB_NAME, USER, context=CONTEXT):
+            self.setup_defaults()
+            app = self.get_app()
+
+            cash_journal, = Journal.search([
+                ('type', '=', 'cash'),
+            ], limit=1)
+
+            payment_mode, = PaymentMode.create([{
+                'name': 'Cash',
+                'processor': 'cash',
+                'journal': cash_journal.id,
+            }])
+
+            pos_sale = self._create_new_sale()
+            with app.test_client() as c:
+                url = '/en_US/pos/sales/{0}/make_payment'.format(pos_sale.id)
+                rv = c.post(
+                    url,
+                    data={
+                        'mode': 'Cash',
+                        'amount': '10'
+                    },
+                    headers=self._get_auth_header()
+                )
+                response = json.loads(rv.data)
+                payment_line_id = response['data'][0]['id']
+
+                url = '/en_US/pos/sales/{0}/make_payment'.format(pos_sale.id)
+                rv = c.delete(
+                    url,
+                    data={
+                        'payment_line_id': payment_line_id
+                    },
+                    headers=self._get_auth_header()
+                )
+                self.assertEqual(pos_sale.sale.total_amount, Decimal(0))
 
 
 def suite():

@@ -45,19 +45,19 @@ class PaymentModeStripe:
         """
         Process the payment using stripe
 
-        params
-        :payment_line: Active record of the payment line
+        :param payment_line: Active record of the payment line
         """
+        PaymentLine = Pool().get('pos.sale.payment_line')
         token = request.values['stripe_token']
 
         # Call up the stripe server and check if the payment succeeded
         # Record any transaction reference into the payment_line
         # Write success as state to the payment line
-        PaymentLine = Pool().get('pos.sale.payment_line')
         stripe.api_key = self.stripe_api_key
 
         # Multiplying amount by 100, because the amount charged by
         # sprite is in cents
+        # TODO: Use the order reference generated in the description
         try:
             stripe.Charge.create(
                 amount=payment_line.amount * 100,
@@ -67,12 +67,13 @@ class PaymentModeStripe:
                     payment_line.pos_sale.sale.id
                 )
             )
-            return PaymentLine.write([payment_line], {
-                'reference': token,
-                'state': 'success'
-            })
         except stripe.CardError, e:
             PaymentLine.write([payment_line], {
                 'reference': '{0} reason for failure {1}'.format(token, e),
                 'state': 'failed'
+            })
+        else:
+            return PaymentLine.write([payment_line], {
+                'reference': token,
+                'state': 'success'
             })

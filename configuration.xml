@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <tryton>
   <data>
-     <record model="ir.ui.view" id="pos_configuration_view_form">
+    <record model="ir.ui.view" id="pos_configuration_view_form">
       <field name="model">pos.configuration</field>
       <field name="type">form</field>
       <field name="arch" type="xml">
@@ -40,5 +40,5 @@
       <field name="name">POSSale</field>
       <field name="code">pos.sale</field>
     </record>
-    </data>
+  </data>
 </tryton>

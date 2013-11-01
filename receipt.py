@@ -41,16 +41,15 @@ class SaleReceipt(Report):
             'pos_sale': pos_sale,
             'sale_date': format_date(
                 sale_datetime.date(),
-                locale=Transaction().context.get('language')
+                locale=Transaction().language
             ),
             'sale_time': format_time(
                 sale_datetime.time(),
-                locale=Transaction().context.get('language')
+                locale=Transaction().language
             ),
         })
 
         res = super(SaleReceipt, cls).parse(
             report, objects, data, localcontext
         )
-        print res
         return res

@@ -53,9 +53,10 @@ class POSSale(ModelSQL):
     @basic_auth_required
     def create_new_sale(cls):
         """
-        Creates a new sale order for this pos sale
+        A class method which is called by the render_list method
+        to create a new sale
 
-        Form Data
+        Form Data:
 
             party: Id of the party (if not provided use default guest)
             invoice_address: ID of the invoice address
@@ -95,7 +96,11 @@ class POSSale(ModelSQL):
     @basic_auth_required
     def render_list(cls):
         """
-        Creates a new pos sale
+        A POST request to this method creates a new sale order for this pos
+        sale and returns the information for the same.
+
+        If It's a GET request, then it returns all the sales that exist
+        on the server
         """
         if request.method == 'POST':
             pos_sale, = cls.create([{
@@ -142,27 +147,30 @@ class POSSale(ModelSQL):
     @basic_auth_required
     def delete_line(self, line_id):
         """
-        Deletes a line from the sale
+        Deletes a product line from the sale
 
-        Form Data:
-            line_id: Id of the Line
+        :param line_id: Id of the Line
 
         Response:
             'OK' if delete succesful
         """
-        if request.method == "DELETE":
-            if self.sale._delete_line(line_id):
-                return jsonify(self._json())
+        if self.sale._delete_line(line_id):
+            return jsonify(self._json())
 
     @basic_auth_required
-    def add_party_to_sale(self):
+    def set_party(self):
         """
-        Adds a party to a sale if party id is given, else uses
-        the name, email and phone field to create a new party
+        If the request made is POST, it add a party to a sale if party id is
+        given, else uses the name, email and phone field to create a new party
         and then sets it
+
+        If the request made is DELETE, it uses the id of the current sale,
+        and sets the default party to the guest party as specified in the
+        configuration
         """
         Sale = Pool().get('sale.sale')
         Party = Pool().get('party.party')
+        POSConfiguration = Pool().get('pos.configuration')
 
         if request.method == "POST":
             if request.form.get('party_id', type=int):
@@ -201,25 +209,19 @@ class POSSale(ModelSQL):
                     'invoice_address': party.addresses[0].id,
                     'shipment_address': party.addresses[0].id,
                 })
-            return jsonify()
+        elif request.method == "DELETE":
+            config = POSConfiguration(1)
+            if request.method == "DELETE":
+                party = config.guest_party
+                Sale.write([self.sale], {
+                    'party': party,
+                    'invoice_address': party.addresses[0].id,
+                    'shipment_address': party.addresses[0].id
+                })
 
-    @basic_auth_required
-    def delete_party_from_sale(self):
-        """
-        Deletes a party from a sale
-        """
-        Sale = Pool().get('sale.sale')
-        POSConfiguration = Pool().get('pos.configuration')
-
-        config = POSConfiguration(1)
-        if request.method == "DELETE":
-            party = config.guest_party
-            Sale.write([self.sale], {
-                'party': party,
-                'invoice_address': party.addresses[0].id,
-                'shipment_address': party.addresses[0].id
-            })
-            return jsonify()
+        return jsonify({
+            'success': True
+        })
 
     @basic_auth_required
     def pay(self):
@@ -262,6 +264,22 @@ class POSSale(ModelSQL):
             )
 
     @basic_auth_required
+    def delete_pay_line(self, payment_line_id):
+        """
+        Deletes a payment line from the payment lines, we don't
+        want the payment line to be a card line, so we ensure that
+        the type of the line isn't card, since if it is, we can't
+        delete it as we must have already verified the transaction before
+        adding it to our line
+
+        :param payment_line_id: The ID of the incoming payment line
+        """
+        PaymentLine.delete([PaymentLine(payment_line_id)])
+        return jsonify({
+            'success': True
+        })
+
+    @basic_auth_required
     def make_receipt(self):
         """
         Makes a receipt for the current sale
@@ -287,6 +305,8 @@ class POSSale(ModelSQL):
         Response:
             success: if send email succesful
         """
+        Company = Pool().get('company.company')
+
         if request.form.get('email_id'):
             email_to = request.form.get('email_id')
         else:
@@ -295,17 +315,19 @@ class POSSale(ModelSQL):
                 if contact_mechanism.type == "email":
                     email_to = contact_mechanism.value
 
-        print email_to
+        # Get the name of the company to be used in the email
+        company = Company(Transaction().context.get('company'))
+
         message = render_email(
             from_email=CONFIG['smtp_from'],
             to=email_to,
             subject='Receipt from {0}'.format(
-                Transaction().context.get('company')
+                company.party.name
             ),
             attachments={
                 'receipt.pdf': self.sale_receipt_cache
             },
-            text_template=Template("hello")
+            text_template=Template("Please find your sale receipt attached")
         )
         server = get_smtp_server()
         server.sendmail(
@@ -419,6 +441,7 @@ class Sale:
     def _delete_line(self, line_id):
         """
         Delete item line from order if a line exists for the current product ID
+
         :param line_id: ID of line
         """
         SaleLine = Pool().get('sale.line')
@@ -528,10 +551,11 @@ class Party:
         """
         Returns a json serializable format for the current party
         """
+        # TODO: Figure out a way to do addresses of customers, or
+        #use the stores address?
         return {
             'id': self.id,
             'name': self.name,
             'phone': self.phone,
             'email': self.email,
-            'invoice_address': self.addresses[0].id
         }

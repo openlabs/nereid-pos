@@ -56,17 +56,10 @@
           </record>
 
         <record id="set_party" model="nereid.url_rule">
-          <field name="rule">/&lt;language&gt;/pos/sales/&lt;int:active_id&gt;/add_party</field>
-          <field name="endpoint">pos.sale.add_party_to_sale</field>
+          <field name="rule">/&lt;language&gt;/pos/sales/&lt;int:active_id&gt;/set_party</field>
+          <field name="endpoint">pos.sale.set_party</field>
           <field name="sequence" eval="140" />
           <field name="http_method_post" eval="True"/>
-          <field name="url_map" ref="pos_url_map"/>
-        </record>
-
-        <record id="delete_party" model="nereid.url_rule">
-          <field name="rule">/&lt;language&gt;/pos/sales/&lt;int:active_id&gt;/delete_party</field>
-          <field name="endpoint">pos.sale.delete_party_from_sale</field>
-          <field name="sequence" eval="140" />
           <field name="http_method_delete" eval="True"/>
           <field name="url_map" ref="pos_url_map"/>
         </record>
@@ -76,6 +69,14 @@
           <field name="endpoint">pos.sale.pay</field>
           <field name="sequence" eval="140"/>
           <field name="http_method_post" eval="True"/>
+          <field name="url_map" ref="pos_url_map"/>
+        </record>
+
+        <record id="delete_payment" model="nereid.url_rule">
+          <field name="rule">/&lt;language&gt;/pos/sales/&lt;int:active_id&gt;/delete_payment/&lt;int:payment_line_id&gt;</field>
+          <field name="endpoint">pos.sale.delete_pay_line</field>
+          <field name="sequence" eval="140"/>
+          <field name="http_method_delete" eval="True"/>
           <field name="url_map" ref="pos_url_map"/>
         </record>
 

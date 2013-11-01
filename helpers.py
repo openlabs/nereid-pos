@@ -10,7 +10,7 @@ from functools import wraps
 from werkzeug.exceptions import Unauthorized
 from trytond.pool import Pool
 from trytond.transaction import Transaction
-from nereid import request, abort, current_app
+from nereid import request, current_app
 
 
 def authenticate():
