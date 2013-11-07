@@ -32,7 +32,9 @@ class Product:
         """
         categories = request.nereid_website.get_categories()
 
-        domain = []
+        domain = [
+            ('salable', '=', True)
+        ]
         category = request.args.get('category', None, type=int)
 
         if category in map(int, categories):
@@ -43,7 +45,6 @@ class Product:
 
         # TODO: Some pagination love to stop loading servers
         return jsonify(
-            success=True,
             data=[
                 product._json() for product in cls.search(domain)
             ]
@@ -63,10 +64,9 @@ class Category:
         """
         Return a list of categories
         """
-        categories = request.nereid_website.get_categories()
         return jsonify(
-            success=True,
             data=[
-                category._json() for category in categories
+                category._json()
+                for category in request.nereid_website.categories
             ]
         )

@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <tryton>
     <data>
-        
+
         <record id="pos_url_map" model="nereid.url_map">
             <field name="name">POS</field>
         </record>
-            
+
         <record id="products" model="nereid.url_rule">
             <field name="rule">/&lt;language&gt;/pos/products</field>
             <field name="endpoint">product.product.pos_list</field>
@@ -21,6 +21,80 @@
             <field name="http_method_get" eval="True"/>
             <field name="url_map" ref="pos_url_map" />
         </record>
-                
+
+        <record id="pos_sale" model="nereid.url_rule">
+            <field name="rule">/&lt;language&gt;/pos/sales</field>
+            <field name="endpoint">pos.sale.render_list</field>
+            <field name="sequence" eval="140" />
+            <field name="http_method_get" eval="True"/>
+            <field name="http_method_post" eval="True"/>
+            <field name="url_map" ref="pos_url_map"/>
+        </record>
+
+        <record id="add_product_line" model="nereid.url_rule">
+            <field name="rule">/&lt;language&gt;/pos/sales/&lt;int:active_id&gt;/add_line</field>
+            <field name="endpoint">pos.sale.add_line</field>
+            <field name="sequence" eval="140" />
+            <field name="http_method_post" eval="True"/>
+            <field name="url_map" ref="pos_url_map"/>
+        </record>
+
+        <record id="delete_product_line" model="nereid.url_rule">
+            <field name="rule">/&lt;language&gt;/pos/sales/&lt;int:active_id&gt;/delete_line/&lt;int:line_id&gt;</field>
+            <field name="endpoint">pos.sale.delete_line</field>
+            <field name="sequence" eval="140" />
+            <field name="http_method_delete" eval="True"/>
+            <field name="url_map" ref="pos_url_map"/>
+        </record>
+
+        <record id="get_parties" model="nereid.url_rule">
+            <field name="rule">/&lt;language&gt;/pos/parties</field>
+            <field name="endpoint">party.party.render_list</field>
+            <field name="sequence" eval="140" />
+            <field name="http_method_get" eval="True"/>
+            <field name="url_map" ref="pos_url_map"/>
+          </record>
+
+        <record id="set_party" model="nereid.url_rule">
+          <field name="rule">/&lt;language&gt;/pos/sales/&lt;int:active_id&gt;/set_party</field>
+          <field name="endpoint">pos.sale.set_party</field>
+          <field name="sequence" eval="140" />
+          <field name="http_method_post" eval="True"/>
+          <field name="http_method_delete" eval="True"/>
+          <field name="url_map" ref="pos_url_map"/>
+        </record>
+
+        <record id="add_payment" model="nereid.url_rule">
+          <field name="rule">/&lt;language&gt;/pos/sales/&lt;int:active_id&gt;/make_payment</field>
+          <field name="endpoint">pos.sale.pay</field>
+          <field name="sequence" eval="140"/>
+          <field name="http_method_post" eval="True"/>
+          <field name="url_map" ref="pos_url_map"/>
+        </record>
+
+        <record id="delete_payment" model="nereid.url_rule">
+          <field name="rule">/&lt;language&gt;/pos/sales/&lt;int:active_id&gt;/delete_payment/&lt;int:payment_line_id&gt;</field>
+          <field name="endpoint">pos.sale.delete_pay_line</field>
+          <field name="sequence" eval="140"/>
+          <field name="http_method_delete" eval="True"/>
+          <field name="url_map" ref="pos_url_map"/>
+        </record>
+
+        <record id="make_receipt" model="nereid.url_rule">
+          <field name="rule">/&lt;language&gt;/pos/sales/&lt;int:active_id&gt;/make_receipt</field>
+          <field name="endpoint">pos.sale.make_receipt</field>
+          <field name="sequence" eval="140"/>
+          <field name="http_method_get" eval="True"/>
+          <field name="url_map" ref="pos_url_map"/>
+        </record>
+
+        <record id="email_receipt" model="nereid.url_rule">
+          <field name="rule">/&lt;language&gt;/pos/sales/&lt;int:active_id&gt;/send_email</field>
+          <field name="endpoint">pos.sale.send_receipt_email</field>
+          <field name="sequence" eval="140"/>
+          <field name="http_method_post" eval="True"/>
+          <field name="url_map" ref="pos_url_map"/>
+        </record>
+
     </data>
 </tryton>

@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+<tryton>
+  <data>
+    <record model="ir.ui.view" id="pos_configuration_view_form">
+      <field name="model">pos.configuration</field>
+      <field name="type">form</field>
+      <field name="arch" type="xml">
+        <![CDATA[
+          <form string="POS Configuration">
+            <label name="default_sequence" />
+            <field name="default_sequence" />
+            <label name="default_payment_term" />
+            <field name="default_payment_term" />
+            <label name="guest_party" />
+            <field name="guest_party" />
+          </form>
+        ]]>
+      </field>
+    </record>
+    <record model="ir.action.act_window" id="act_pos_configuration_form">
+      <field name="name">POS Configuration</field>
+      <field name="res_model">pos.configuration</field>
+    </record>
+    <record model="ir.action.act_window.view"
+        id="act_pos_configuration_view1">
+      <field name="sequence" eval="1" />
+      <field name="view" ref="pos_configuration_view_form" />
+      <field name="act_window" ref="act_pos_configuration_form" />
+    </record>
+    <record model="ir.sequence.type" id="sequence_type_sale">
+      <field name="name">POSSale</field>
+      <field name="code">pos.sale</field>
+    </record>
+    <record model="ir.sequence.type-res.group"
+      id="sequence_type_sale_group_admin">
+      <field name="sequence_type" ref="sequence_type_sale"/>
+      <field name="group" ref="res.group_admin"/>
+    </record>
+    <record model="ir.sequence" id="sequence_sale">
+      <field name="name">POSSale</field>
+      <field name="code">pos.sale</field>
+    </record>
+  </data>
+</tryton>

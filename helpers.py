@@ -9,7 +9,17 @@ from functools import wraps
 
 from werkzeug.exceptions import Unauthorized
 from trytond.pool import Pool
-from nereid import request, abort
+from trytond.transaction import Transaction
+from nereid import request, current_app
+
+
+def authenticate():
+    """Sends a 401 response that enables basic auth"""
+    return current_app.response_class(
+        'Could not verify your access level for that URL.\n'
+        'You have to login with proper credentials', 401,
+        {'WWW-Authenticate': 'Basic realm="Login Required"'}
+    )
 
 
 def basic_auth_required(function):
@@ -19,12 +29,13 @@ def basic_auth_required(function):
     def decorated_function(*args, **kwargs):
         auth = request.authorization
         if not auth:
-            abort(403)
+            return authenticate()
 
         User = Pool().get('res.user')
-        result = User.get_login(auth.username, auth.password)
-        if not result:
+        user = User.get_login(auth.username, auth.password)
+        if not user:
             raise Unauthorized('Login Error')
 
-        return function(*args, **kwargs)
+        with Transaction().set_user(user):
+            return function(*args, **kwargs)
     return decorated_function
