@@ -689,12 +689,12 @@ class TestProduct(NereidTestCase):
                     headers=self._get_auth_header()
                 )
                 response = json.loads(rv.data)
-                self.assertEqual(response['data'][0]['state'], 'success')
+                self.assertEqual(response['state'], 'success')
                 self.assertEqual(
-                    response['data'][0]['reference'],
+                    response['reference'],
                     'paid by cash'
                 )
-                self.assertEqual(response['data'][0]['amount'], Decimal('10'))
+                self.assertEqual(response['amount'], Decimal('10'))
 
     def test_0100_pay_by_card(self):
         """
@@ -742,10 +742,10 @@ class TestProduct(NereidTestCase):
                 )
                 response = json.loads(rv.data)
                 self.assertEqual(
-                    response['data'][0]['reference'], stripe_token
+                    response['reference'], stripe_token
                 )
                 self.assertEqual(
-                    response['data'][0]['state'], 'draft'
+                    response['state'], 'draft'
                 )
 
     def test_0110_pay_by_failed_card(self):
@@ -794,7 +794,7 @@ class TestProduct(NereidTestCase):
                 )
                 response = json.loads(rv.data)
                 self.assertEqual(
-                    response['data'][0]['state'], 'failed'
+                    response['state'], 'failed'
                 )
 
     def test_0130_receipt_test(self):
@@ -903,7 +903,7 @@ class TestProduct(NereidTestCase):
                     headers=self._get_auth_header()
                 )
                 response = json.loads(rv.data)
-                payment_line_id = response['data'][0]['id']
+                payment_line_id = response['id']
 
                 url = '/en_US/pos/sales/{0}/make_payment'.format(pos_sale.id)
                 rv = c.delete(

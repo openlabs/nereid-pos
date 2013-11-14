@@ -258,9 +258,7 @@ class POSSale(ModelSQL):
             }])
             payment_mode.process(payment_line)
             return jsonify(
-                data=[
-                    line._json() for line in self.payment_lines
-                ]
+                payment_line._json()
             )
 
     @basic_auth_required
