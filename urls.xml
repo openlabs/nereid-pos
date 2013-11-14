@@ -88,6 +88,14 @@
           <field name="url_map" ref="pos_url_map"/>
         </record>
 
+        <record id="mark_as_paid" model="nereid.url_rule">
+          <field name="rule">/&lt;language&gt;/pos/sales/&lt;int:active_id&gt;/mark_as_paid</field>
+          <field name="endpoint">pos.sale.confirm_pay</field>
+          <field name="sequence" eval="140"/>
+          <field name="http_method_post" eval="True"/>
+          <field name="url_map" ref="pos_url_map"/>
+        </record>
+
         <record id="email_receipt" model="nereid.url_rule">
           <field name="rule">/&lt;language&gt;/pos/sales/&lt;int:active_id&gt;/send_email</field>
           <field name="endpoint">pos.sale.send_receipt_email</field>

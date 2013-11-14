@@ -55,17 +55,18 @@ class PaymentModeStripe:
         # Write success as state to the payment line
         stripe.api_key = self.stripe_api_key
 
+        if payment_line.pos_sale.sale.party.email:
+            email = payment_line.pos_sale.party.email
+        else:
+            email = "guest customer"
         # Multiplying amount by 100, because the amount charged by
         # sprite is in cents
         # TODO: Use the order reference generated in the description
         try:
-            stripe.Charge.create(
-                amount=payment_line.amount * 100,
-                currency=payment_line.pos_sale.sale.currency.code,
+            customer = stripe.Customer.create(
                 card=token,
-                description='For Sale ID:{0}'.format(
-                    payment_line.pos_sale.sale.id
-                )
+                description='Customer Email: {0} \
+                \n For Sale ID:{1}'.format(email, payment_line.pos_sale.id)
             )
         except stripe.CardError, e:
             PaymentLine.write([payment_line], {
@@ -75,5 +76,29 @@ class PaymentModeStripe:
         else:
             return PaymentLine.write([payment_line], {
                 'reference': token,
+                'state': 'draft',
+                'stripe_customer_token': customer.id
+            })
+
+    def _complete_stripe_payment(self, payment_line):
+        """
+        Process and finally complete the payment through stripe
+        """
+        PaymentLine = Pool().get('pos.sale.payment_line')
+        stripe.api_key = self.stripe_api_key
+
+        try:
+            stripe.Charge.create(
+                amount=payment_line.amount * 100,
+                currency='usd',
+                customer=payment_line.stripe_customer_token
+            )
+        except stripe.CardError, e:
+            PaymentLine.write([payment_line], {
+                'reference': 'Reason for failure {0}'.format(e),
+                'state': 'failed'
+            })
+        else:
+            PaymentLine.write([payment_line], {
                 'state': 'success'
             })

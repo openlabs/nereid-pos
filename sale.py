@@ -280,6 +280,22 @@ class POSSale(ModelSQL):
         })
 
     @basic_auth_required
+    def confirm_pay(self):
+        """
+        This method loops through all the payment lines for the current
+        sale and charges them on the stripe server, if it's a card line
+        """
+        PaymentMode = Pool().get('pos.sale.payment_mode')
+        for payment_line in self.payment_lines:
+            if payment_line.stripe_customer_token:
+                payment_mode = PaymentMode(payment_line.processor)
+                payment_mode._complete_stripe_payment(payment_line)
+
+        return jsonify({
+            'success': True
+        })
+
+    @basic_auth_required
     def make_receipt(self):
         """
         Makes a receipt for the current sale
@@ -475,6 +491,7 @@ class PaymentLine(ModelSQL, ModelView):
         ('success', 'Success'),
         ('failed', 'Failed'),
     ], 'State')
+    stripe_customer_token = fields.Char('Stripe Customer Token')
 
     def _json(self):
         """
