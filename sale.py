@@ -258,9 +258,7 @@ class POSSale(ModelSQL):
             }])
             payment_mode.process(payment_line)
             return jsonify(
-                data=[
-                    line._json() for line in self.payment_lines
-                ]
+                payment_line._json()
             )
 
     @basic_auth_required
@@ -275,6 +273,22 @@ class POSSale(ModelSQL):
         :param payment_line_id: The ID of the incoming payment line
         """
         PaymentLine.delete([PaymentLine(payment_line_id)])
+        return jsonify({
+            'success': True
+        })
+
+    @basic_auth_required
+    def confirm_pay(self):
+        """
+        This method loops through all the payment lines for the current
+        sale and charges them on the stripe server, if it's a card line
+        """
+        PaymentMode = Pool().get('pos.sale.payment_mode')
+        for payment_line in self.payment_lines:
+            if payment_line.stripe_customer_token:
+                payment_mode = PaymentMode(payment_line.processor)
+                payment_mode._complete_stripe_payment(payment_line)
+
         return jsonify({
             'success': True
         })
@@ -475,6 +489,7 @@ class PaymentLine(ModelSQL, ModelView):
         ('success', 'Success'),
         ('failed', 'Failed'),
     ], 'State')
+    stripe_customer_token = fields.Char('Stripe Customer Token')
 
     def _json(self):
         """

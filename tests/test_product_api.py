@@ -689,12 +689,12 @@ class TestProduct(NereidTestCase):
                     headers=self._get_auth_header()
                 )
                 response = json.loads(rv.data)
-                self.assertEqual(response['data'][0]['state'], 'success')
+                self.assertEqual(response['state'], 'success')
                 self.assertEqual(
-                    response['data'][0]['reference'],
+                    response['reference'],
                     'paid by cash'
                 )
-                self.assertEqual(response['data'][0]['amount'], Decimal('10'))
+                self.assertEqual(response['amount'], Decimal('10'))
 
     def test_0100_pay_by_card(self):
         """
@@ -742,10 +742,10 @@ class TestProduct(NereidTestCase):
                 )
                 response = json.loads(rv.data)
                 self.assertEqual(
-                    response['data'][0]['reference'], stripe_token
+                    response['reference'], stripe_token
                 )
                 self.assertEqual(
-                    response['data'][0]['state'], 'success'
+                    response['state'], 'draft'
                 )
 
     def test_0110_pay_by_failed_card(self):
@@ -794,7 +794,7 @@ class TestProduct(NereidTestCase):
                 )
                 response = json.loads(rv.data)
                 self.assertEqual(
-                    response['data'][0]['state'], 'failed'
+                    response['state'], 'failed'
                 )
 
     def test_0130_receipt_test(self):
@@ -903,7 +903,7 @@ class TestProduct(NereidTestCase):
                     headers=self._get_auth_header()
                 )
                 response = json.loads(rv.data)
-                payment_line_id = response['data'][0]['id']
+                payment_line_id = response['id']
 
                 url = '/en_US/pos/sales/{0}/make_payment'.format(pos_sale.id)
                 rv = c.delete(
@@ -914,6 +914,62 @@ class TestProduct(NereidTestCase):
                     headers=self._get_auth_header()
                 )
                 self.assertEqual(pos_sale.sale.total_amount, Decimal(0))
+
+    def test_0150_complete_payments(self):
+        """
+        Test to check if the payment lines that are already stored,
+        are processed after a request to mark_as_paid is maid
+        """
+        PaymentMode = POOL.get('pos.sale.payment_mode')
+        Journal = POOL.get('account.journal')
+
+        with Transaction().start(DB_NAME, USER, context=CONTEXT):
+            self.setup_defaults()
+            app = self.get_app()
+
+            cash_journal, = Journal.search([
+                ('type', '=', 'cash'),
+            ], limit=1)
+
+            payment_mode, = PaymentMode.create([{
+                'name': 'Stripe',
+                'processor': 'stripe',
+                'stripe_api_key': 'sk_test_MOOXLfuPHtxanjZitIfoWNZI',
+                'journal': cash_journal.id,
+            }])
+
+            stripe.api_key = 'sk_test_MOOXLfuPHtxanjZitIfoWNZI'
+            stripe_response = stripe.Token.create(
+                card={
+                    'number': '4242424242424242',
+                    'exp_month': 12,
+                    'exp_year': 2013,
+                    'cvc': 123
+                }
+            )
+            stripe_token = stripe_response['id']
+            pos_sale = self._create_new_sale()
+            with app.test_client() as c:
+                url = '/en_US/pos/sales/{0}/make_payment'.format(pos_sale.id)
+                c.post(
+                    url,
+                    data={
+                        'mode': 'Stripe',
+                        'amount': '1000',
+                        'stripe_token': stripe_token
+                    },
+                    headers=self._get_auth_header()
+                )
+
+                url = '/en_US/pos/sales/{0}/mark_as_paid'.format(pos_sale.id)
+                c.post(
+                    url,
+                    data={},
+                    headers=self._get_auth_header()
+                )
+                self.assertEqual(
+                    pos_sale.payment_lines[0].state, 'success'
+                )
 
 
 def suite():
